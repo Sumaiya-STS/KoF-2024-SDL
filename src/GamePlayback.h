@@ -1,5 +1,49 @@
 #include "Character.h"
 #include <queue>
+#include <map>
+#include <vector>
+#include <algorithm>
+struct LeaderboardEntry{
+    string winnerName;
+    string loserName;
+    int winTime;
+
+    string getTime(){
+        string time = to_string(winTime/1000.0);
+        int pos = 0;
+        while (time[pos]!='.')
+        {
+            pos++;
+        }
+        while (time.length() > pos+2)
+        {
+            time.pop_back();
+        }
+        return time;
+    }
+    string toString(int id){
+        string time = to_string(winTime);
+        int pos = 0;
+        string rank = to_string(id);
+        while (time[pos]!='.')
+        {
+            pos++;
+        }
+        while (time.length() > pos+2)
+        {
+            time.pop_back();
+        }
+        
+        return rank + "          " +winnerName + "         " + loserName + "         " + time;
+    }
+
+    bool operator<(const LeaderboardEntry& other) const {
+        return winTime < other.winTime;
+    }
+
+    
+};
+
 class GamePlayback
 {
 private:
@@ -10,12 +54,22 @@ private:
     int playBackPointer ; // 0 for pre-game phrase, 1 for game running,2 showing video, 3 for game phrase end
     int countDown = 0;
     bool quit;
+    string currentP1Name="";
+    string currentP2Name="";
+    string winnerName;
+    string loserName;
+    int matchStartTime;
+    vector < LeaderboardEntry > leaderboardData; 
     void resetGame();
+    void readData();
+    void writeData();
 
 public:
     LTexture gBackground;
     LTexture mBackground;
     LTexture gTextTexture;
+    LTexture gNameTexture;
+    LTexture gLeaderTextTexture;
     //Character
     Dot player1 = Dot(00, &playBackPointer);
     Dot player2 = Dot(01, &playBackPointer);
@@ -39,7 +93,7 @@ GamePlayback::GamePlayback(SDL_Renderer* _gRenderer)
     {
         printf( "Failed to load media!\n" );
     }
-    
+    readData();
 }
 
 GamePlayback::~GamePlayback()
@@ -86,6 +140,9 @@ bool GamePlayback::loadMedia()
 		success = false;
 
 	}
+    gTextTexture.gFont = TTF_OpenFont("./Config/font.otf",78);
+	gNameTexture.gFont = TTF_OpenFont("./Config/font.otf",58);
+    gLeaderTextTexture.gFont = TTF_OpenFont("./Config/franciosone.ttf",58);
 
 	return success;
 }
@@ -113,7 +170,18 @@ void GamePlayback::handleMenu(SDL_Event &e){
         }
         if (e.key.keysym.sym == SDLK_RETURN) {
             if(menuPointer == 0){
-                mode = 1;
+                if(playBackPointer == 0)
+                    menuPointer = 6;
+                else{
+                    mode = 1;
+                }
+                return;
+            }
+            if(menuPointer == 1){
+                for(auto it: leaderboardData){
+                    cout << it.winnerName << " " << it.loserName << " " << it.winTime << endl;
+                }
+                menuPointer = 8;
                 return;
             }
             if(menuPointer == 3)
@@ -127,6 +195,50 @@ void GamePlayback::handleMenu(SDL_Event &e){
            if(menuPointer == 5){
                 menuPointer = 0;
             }
+            if(menuPointer == 6){
+                menuPointer = 7;
+                return;
+            }
+            if(menuPointer == 7){
+                playBackPointer = 1;
+                mode = 1;
+                matchStartTime = SDL_GetTicks();
+                return;
+            }
+        }
+        if(e.key.keysym.sym == SDLK_ESCAPE){
+            if(menuPointer == 6){
+                menuPointer = 0;
+            }
+            if(menuPointer == 7)
+            {
+                menuPointer = 6;
+            }
+            if(menuPointer == 8){
+                menuPointer = 1;
+            }
+        }
+        if(e.key.keysym.sym>='a' and e.key.keysym.sym<='z'){
+            if(menuPointer == 6 and mode == 0){
+                currentP1Name+=e.key.keysym.sym;
+                if(currentP1Name.length()>15)
+                    currentP1Name.pop_back();
+            }
+            if(menuPointer == 7 and mode == 0){
+                currentP2Name+=e.key.keysym.sym;
+                if(currentP2Name.length()>15)
+                    currentP2Name.pop_back();
+            }
+        }
+        if(e.key.keysym.sym == SDLK_BACKSPACE){
+            if(menuPointer == 6 and mode == 0){
+                if(!currentP1Name.empty())
+                    currentP1Name.pop_back();
+            }
+            if(menuPointer == 7 and mode == 0){
+                if(!currentP2Name.empty())
+                    currentP2Name.pop_back();
+            }
         }
         // cout << e.key.keysym.sym << endl;
     }
@@ -139,6 +251,7 @@ void GamePlayback::handlePlayback(SDL_Event &e){
     {
         if (e.key.keysym.sym == SDLK_ESCAPE) {
             mode = 0;
+            menuPointer = 0;
             return;
         }
     }
@@ -154,13 +267,55 @@ void GamePlayback::renderMenu(){
      //Clear screen
     string path = "./Menu/menu1.png";
     path[11] = menuPointer  + '0';
-    SDL_Color textcolor= {250,250,250};
+    SDL_Color textcolor= {200,200,200};
     mBackground.loadFromFile(gRenderer, path);
-    gTextTexture.loadFromRenderedText(gRenderer,path,textcolor);
     SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
     SDL_RenderClear( gRenderer );
     mBackground.render(gRenderer, 0,0);
-    gTextTexture.render(gRenderer, 500, 500);
+    if(menuPointer == 6){
+        string text = "Enter Player 1 Name";
+        gTextTexture.loadFromRenderedText(gRenderer,text,textcolor);
+        gTextTexture.render(gRenderer, 400, 400);
+        if(!currentP1Name.empty()){
+            gNameTexture.loadFromRenderedText(gRenderer,currentP1Name,textcolor);
+            gNameTexture.render(gRenderer, 760 - currentP1Name.length()*10, 560);
+        }
+    }
+    if(menuPointer == 7){
+        string text = "Enter Player 2 Name";
+        gTextTexture.loadFromRenderedText(gRenderer,text,textcolor);
+        gTextTexture.render(gRenderer, 400, 400);
+        if(!currentP2Name.empty()){
+            gNameTexture.loadFromRenderedText(gRenderer,currentP2Name,textcolor);
+            gNameTexture.render(gRenderer, 760 - currentP2Name.length()*10, 560);
+        }
+    }
+
+    if(menuPointer == 8){
+        string text = "";
+        int rank = 0;
+        textcolor= {190,190,190};
+        sort(leaderboardData.begin(), leaderboardData.end());
+        for(auto it: leaderboardData){
+            // text = it.toString(rank++); 
+            gLeaderTextTexture.loadFromRenderedText(gRenderer, to_string(rank+1), textcolor);
+            gLeaderTextTexture.render(gRenderer, 500 , 440 + rank*80);
+
+            gLeaderTextTexture.loadFromRenderedText(gRenderer, it.winnerName, textcolor);
+            gLeaderTextTexture.render(gRenderer, 780 , 440 + rank*80);
+
+            gLeaderTextTexture.loadFromRenderedText(gRenderer, it.loserName, textcolor);
+            gLeaderTextTexture.render(gRenderer, 1120 , 440 + rank*80);
+
+            gLeaderTextTexture.loadFromRenderedText(gRenderer,it.getTime(), textcolor);
+            gLeaderTextTexture.render(gRenderer, 1500 , 440 + rank*80);
+            rank++;
+            if(rank == 6)
+                break;
+        }
+        
+    }
+    
     SDL_RenderPresent( gRenderer );
 
 
@@ -173,6 +328,8 @@ void GamePlayback::renderPlayback(){
         player1.die();
         cout << "Showing animation\n";
         cout << "player 2 is winner\n";
+        winnerName = currentP2Name;
+        loserName = currentP1Name;
         player2.win();
         playBackPointer = 3;
     }
@@ -182,6 +339,8 @@ void GamePlayback::renderPlayback(){
         player2.die();
         cout << "Showing animation\n";
         cout << "player 1 is winner\n";
+        winnerName = currentP1Name;
+        loserName = currentP2Name;
         player1.win();
         playBackPointer = 3;
     }
@@ -190,22 +349,34 @@ void GamePlayback::renderPlayback(){
             Event fightingevent = q.front();
             q.pop();
             bool success = false;
+
+            
             if(fightingevent.getMaster() == 1){
                 if(fightingevent.getType()!=2){
                     fightingevent.posX = player2.getPerformingPosX(fightingevent);
                     fightingevent.posY = player2.getPerformingPosY(fightingevent);
                 }
-                success = player1.handleFightingEvent(fightingevent);
+                if(fightingevent.getType()!=2 ){
+              
+                    success = player1.handleFightingEvent(fightingevent);
+                }
+                else{
+                  //  if(powermap[{fightingevent.getMaster(), fightingevent.getTime()}]==0)
+                        success = player1.handleFightingEvent(fightingevent);
+
+                }
             }
             else{
                 if(fightingevent.getType()!=2){
                     fightingevent.posX = player1.getPerformingPosX(fightingevent);
                     fightingevent.posY = player1.getPerformingPosY(fightingevent);
                 }
-                success = player2.handleFightingEvent(fightingevent);
+               // if(fightingevent.getType()!=2 or powermap[{fightingevent.getMaster(), fightingevent.getTime()!=1}])
+                    success = player2.handleFightingEvent(fightingevent);
             }
             if(fightingevent.getType()==2){
                 if(success){
+                    powermap[{fightingevent.getMaster(), fightingevent.getTime()}] = 1;
                     if(fightingevent.getMaster() == 1){
                         player2.erasePower(fightingevent.getTime());
                     }
@@ -230,8 +401,10 @@ void GamePlayback::renderPlayback(){
             resetGame();
             mode = 0;
             playBackPointer = 0;
-            cout << "Game Over" << endl;
-            
+            menuPointer = 0;
+            cout << "Game Over in " << SDL_GetTicks() - matchStartTime << endl;
+            leaderboardData.push_back({winnerName, loserName,(int)SDL_GetTicks() - matchStartTime});
+            writeData();
             return;
         }
     }
@@ -281,6 +454,37 @@ void GamePlayback::run(){
 }
 
 void GamePlayback::resetGame(){
+    powermap.clear();
     player1.reset();
     player2.reset();
+    currentP1Name.clear();
+    currentP2Name.clear();
+    while (!q.empty())
+    {
+        q.pop();
+    }
+    
+}
+
+void GamePlayback::readData(){
+    //reading leaderboard data if any
+    ifstream fin("Config/leader.in",ios::in);
+    int n;
+    fin >> n;
+    cout << n << endl;
+    while(n--){
+        string a,b;
+        int t;
+        fin >> a >> b >> t;
+        leaderboardData.push_back({a,b,t});
+    }
+}
+
+void GamePlayback::writeData(){
+    //reading leaderboard data if any
+    ofstream fout("Config/leader.in",ios::out);
+    fout << leaderboardData.size() <<"\n";
+    for(auto it: leaderboardData){
+        fout << it.winnerName << " " << it.loserName << " " << it.winTime << "\n";
+    }
 }

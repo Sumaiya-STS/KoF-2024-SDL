@@ -8,10 +8,12 @@
 #include <iostream>
 #include <fstream>
 #include <queue>
+#include <map>
 #define swidth 1920
 #define sheight 1080
 using namespace std;
 queue < Event > q;
+map < pair< int , int >, int > powermap;
 
 class Power{
     public:
@@ -328,6 +330,7 @@ class Dot
         void reset(){
             life = Life();
             powerhealth = PowerHealth();
+            powerContainer.clear();
             mPosX = pType==0? 300 : 1300;
             mPosY = 0;
             state = 0;
@@ -339,6 +342,7 @@ class Dot
             mVelY = 0;
             won = 0;
             lost = 0;
+            lastPowerTime = 0;
         }
 
 
@@ -362,6 +366,7 @@ class Dot
         int performingState;
         int damagingState;
         int frameCounts[nStates];
+        int lastPowerTime = 0 ;
         SDL_Rect gSpriteClips[ nStates][15];
 };
 
@@ -742,7 +747,7 @@ void Dot::handleEvent( SDL_Event& e )
             if( state != 0)
                 return;
             performingState = 1;
-            q.push({0, pType, SDL_GetTicks()});
+            q.push({0, pType, (int)SDL_GetTicks()});
             state = 5;
             frames = 0;
             if(pType == 1)
@@ -751,18 +756,22 @@ void Dot::handleEvent( SDL_Event& e )
             if (state != 1)
                 return;
             performingState = 1;
-            q.push({1, pType, SDL_GetTicks()});
+            q.push({1, pType, (int)SDL_GetTicks()});
             state = 6;
             frames = 0;
             mPosY += 5;
             if(pType == 1)
                 mPosX -= DOT_WIDTH[state] - DOT_WIDTH[1];
         } else if (e.key.keysym.sym == keyprofile.p3) {
+            cout << powerhealth.getHealth() << endl;
+            if(SDL_GetTicks()-lastPowerTime < 1500)
+                return;
             if (state != 0)
                 return;
             if(powerhealth.getHealth() == 0){
                 return;
             }
+            lastPowerTime = SDL_GetTicks();
             powerhealth.decrease();
             performingState = 1;
             state = 7;
@@ -884,9 +893,12 @@ bool Dot::handleFightingEvent(Event e){
         break;
 
     case 2:
+        cout << pType << " " << powermap[{pType,e.getTime()}] ;
         if(collission(e.posX, e.posY) and state!= 4){
+            
             life.decreasePower();
-            cout << "Power Collied" << endl;
+            cout << " Power Collied: "<< e.getTime() << endl;
+            powermap[{e.getMaster(),e.getTime()}] = 1;
             if(state == 1 || state == 6){
                 state = 9;
             }
@@ -898,12 +910,13 @@ bool Dot::handleFightingEvent(Event e){
             return 1;
         }
         else{
-            cout << "Power not Collieded" << endl;
+            cout << " Power not Collieded" << endl;
         }
         return 0;
 
         break;
     default:
+        return 1;
         break;
     }
 }
@@ -958,6 +971,7 @@ void Dot::move(int restrictionX)
             powerContainer.erase(powerContainer.begin()+i);
         }
         else{
+            if(powermap[{pType,powerContainer[i].id}]==0)
             q.push(Event(2, pType , powerContainer[i].id ,powerContainer[i].mPosX + powerContainer[i].POWER_WIDTH,powerContainer[i].mPosY));
             i++;
         }

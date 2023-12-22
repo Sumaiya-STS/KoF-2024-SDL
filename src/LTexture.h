@@ -10,7 +10,7 @@ class LTexture
 	public:
 		//Initializes variables
 		LTexture();
-
+		TTF_Font* gFont;
 		//Deallocates memory
 		~LTexture();
 
@@ -43,10 +43,10 @@ class LTexture
 		SDL_Texture* getTexture();
 
 
-
 	private:
 		//The actual hardware texture
 		SDL_Texture* mTexture;
+		
 
 		//Image dimensions
 		int mWidth;
@@ -171,7 +171,7 @@ bool LTexture::loadFromRenderedText( SDL_Renderer* gRenderer, std::string textur
 {
     //Get rid of preexisting texture
     free();
-	TTF_Font* gFont = TTF_OpenFont( "Config/lazy.ttf", 28 );
+	// TTF_Font* gFont = TTF_OpenFont( "Config/font.otf", 78 );
     //Render text surface
     SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
     if( textSurface == NULL )
