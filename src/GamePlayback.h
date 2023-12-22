@@ -59,6 +59,7 @@ private:
     string winnerName;
     string loserName;
     int matchStartTime;
+    int lastBackground = -1;
     vector < LeaderboardEntry > leaderboardData; 
     void resetGame();
     void readData();
@@ -150,23 +151,25 @@ bool GamePlayback::loadMedia()
 void GamePlayback::handleMenu(SDL_Event &e){
     if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
     {
-        if (e.key.keysym.sym == SDLK_DOWN) {
-            menuPointer++;
-            menuPointer%= 4;
-        }
-        if (e.key.keysym.sym == SDLK_UP) {
-            menuPointer--;
-            if(menuPointer < 0)
-                menuPointer+= 4;
-        }
-        if (e.key.keysym.sym == SDLK_RIGHT) {
-            if(menuPointer==4)
-                menuPointer = 5;
-        }
-        if (e.key.keysym.sym == SDLK_LEFT) {
-           
-            if(menuPointer==5)
-                menuPointer = 4;
+        if(menuPointer>=0 and menuPointer <=3){
+            if (e.key.keysym.sym == SDLK_DOWN) {
+                menuPointer++;
+                menuPointer%= 4;
+            }
+            if (e.key.keysym.sym == SDLK_UP) {
+                menuPointer--;
+                if(menuPointer < 0)
+                    menuPointer+= 4;
+            }
+            if (e.key.keysym.sym == SDLK_RIGHT) {
+                if(menuPointer==4)
+                    menuPointer = 5;
+            }
+            if (e.key.keysym.sym == SDLK_LEFT) {
+            
+                if(menuPointer==5)
+                    menuPointer = 4;
+            }
         }
         if (e.key.keysym.sym == SDLK_RETURN) {
             if(menuPointer == 0){
@@ -178,12 +181,15 @@ void GamePlayback::handleMenu(SDL_Event &e){
                 return;
             }
             if(menuPointer == 1){
-                for(auto it: leaderboardData){
-                    cout << it.winnerName << " " << it.loserName << " " << it.winTime << endl;
-                }
                 menuPointer = 8;
                 return;
             }
+            if (menuPointer == 2)
+            {
+                menuPointer = 10;
+                return;
+            }
+            
             if(menuPointer == 3)
             {
                 menuPointer = 4;
@@ -214,9 +220,13 @@ void GamePlayback::handleMenu(SDL_Event &e){
             {
                 menuPointer = 6;
             }
-            if(menuPointer == 8){
+            if(menuPointer == 8 or menuPointer == 9){
                 menuPointer = 1;
             }
+            if(menuPointer == 10 or menuPointer == 11){
+                menuPointer = 2;
+            }
+
         }
         if(e.key.keysym.sym>='a' and e.key.keysym.sym<='z'){
             if(menuPointer == 6 and mode == 0){
@@ -243,6 +253,117 @@ void GamePlayback::handleMenu(SDL_Event &e){
         // cout << e.key.keysym.sym << endl;
     }
 
+
+    if( e.type == SDL_MOUSEMOTION  )
+    {
+        //Get mouse position
+        int x, y;
+        SDL_GetMouseState( &x, &y );
+        if(menuPointer >=0 and menuPointer <=3){
+            if(x >= 46 and x<= 420){
+                if(y >= 462 and y<= 548){
+                    menuPointer = 0;
+                    return;
+                }
+                if(y >= 584 and y<= 660){
+                    menuPointer = 1;
+                    return;
+                }
+                if(y >= 700 and y<= 786){
+                    menuPointer = 2;
+                    return;
+                }
+                if(y >= 820 and y<= 903){
+                    menuPointer = 3;
+                    return;
+                }
+            }
+        }
+        else
+        if(menuPointer >=4 and menuPointer <=5){
+            if(y>=493 and y <= 555){
+                if(x>=714 and x<= 814){
+                    menuPointer = 4;
+                }
+                if(x>=994 and x<= 1065){
+                    menuPointer = 5;
+                }
+            }
+
+        }
+        if(menuPointer >=6 and menuPointer <=7){
+
+        }
+        if(menuPointer >=8 and menuPointer <=9){
+            if(x>=105 and x <= 263 and y>=600 and y<= 690){
+                menuPointer = 9;
+            }
+            else{
+                menuPointer = 8;
+            }
+        }
+        if(menuPointer >=10 and menuPointer <=11){
+            if(x>=105 and x <= 263 and y>=600 and y<= 690){
+                menuPointer = 11;
+            }
+            else{
+                menuPointer = 10;
+            }
+
+        }
+    }
+    if(e.type == SDL_MOUSEBUTTONDOWN){
+        if(menuPointer == 0){
+            if(playBackPointer == 0)
+                menuPointer = 6;
+            else{
+                mode = 1;
+            }
+            return;
+        }
+        if(menuPointer == 1){
+            
+            menuPointer = 8;
+            return;
+        }
+        if (menuPointer == 2)
+        {
+            menuPointer = 10;
+            return;
+        }
+        
+        if(menuPointer == 3)
+        {
+            menuPointer = 4;
+            return;
+        }
+        if(menuPointer == 4){
+            quit = true;
+        }
+        if(menuPointer == 5){
+            menuPointer = 0;
+        }
+        if(menuPointer == 6){
+            menuPointer = 7;
+            return;
+        }
+        if(menuPointer == 7){
+            playBackPointer = 1;
+            mode = 1;
+            matchStartTime = SDL_GetTicks();
+            return;
+        }
+        if(menuPointer == 9){
+            menuPointer = 1;
+            return;
+        }
+        if(menuPointer == 11){
+            menuPointer = 2;
+            return;
+        }
+
+    }
+
 }
 
 void GamePlayback::handlePlayback(SDL_Event &e){
@@ -265,13 +386,17 @@ void GamePlayback::handlePlayback(SDL_Event &e){
 }
 void GamePlayback::renderMenu(){
      //Clear screen
-    string path = "./Menu/menu1.png";
-    path[11] = menuPointer  + '0';
-    SDL_Color textcolor= {200,200,200};
-    mBackground.loadFromFile(gRenderer, path);
+    if(lastBackground!=menuPointer){
+        string path = "./Menu/menu";
+        path+= to_string(menuPointer);
+        path+=".png";
+        mBackground.loadFromFile(gRenderer, path);
+        lastBackground = menuPointer;
+    }
     SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
     SDL_RenderClear( gRenderer );
     mBackground.render(gRenderer, 0,0);
+    SDL_Color textcolor= {200,200,200};
     if(menuPointer == 6){
         string text = "Enter Player 1 Name";
         gTextTexture.loadFromRenderedText(gRenderer,text,textcolor);
@@ -291,7 +416,7 @@ void GamePlayback::renderMenu(){
         }
     }
 
-    if(menuPointer == 8){
+    if(menuPointer == 8 or menuPointer == 9){
         string text = "";
         int rank = 0;
         textcolor= {190,190,190};

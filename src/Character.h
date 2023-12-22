@@ -916,7 +916,7 @@ bool Dot::handleFightingEvent(Event e){
 
         break;
     default:
-        return 1;
+         return 1;
         break;
     }
 }
