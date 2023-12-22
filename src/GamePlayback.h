@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <SDL2/SDL_mixer.h>
 struct LeaderboardEntry{
     string winnerName;
     string loserName;
@@ -71,6 +72,8 @@ public:
     LTexture gTextTexture;
     LTexture gNameTexture;
     LTexture gLeaderTextTexture;
+
+    Mix_Music *gMusic = NULL;
     //Character
     Dot player1 = Dot(00, &playBackPointer);
     Dot player2 = Dot(01, &playBackPointer);
@@ -94,6 +97,7 @@ GamePlayback::GamePlayback(SDL_Renderer* _gRenderer)
     {
         printf( "Failed to load media!\n" );
     }
+    Mix_PlayMusic( gMusic, -1 );
     readData();
 }
 
@@ -145,13 +149,20 @@ bool GamePlayback::loadMedia()
 	gNameTexture.gFont = TTF_OpenFont("./Config/font.otf",58);
     gLeaderTextTexture.gFont = TTF_OpenFont("./Config/franciosone.ttf",58);
 
+    gMusic = Mix_LoadMUS( "Audio/intro.wav" );
+    if( gMusic == NULL )
+    {
+        printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
 	return success;
 }
 
 void GamePlayback::handleMenu(SDL_Event &e){
     if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
     {
-        if(menuPointer>=0 and menuPointer <=3){
+        if(menuPointer>=0 and menuPointer <=5){
             if (e.key.keysym.sym == SDLK_DOWN) {
                 menuPointer++;
                 menuPointer%= 4;
@@ -176,6 +187,7 @@ void GamePlayback::handleMenu(SDL_Event &e){
                 if(playBackPointer == 0)
                     menuPointer = 6;
                 else{
+                    Mix_HaltMusic();
                     mode = 1;
                 }
                 return;
@@ -317,6 +329,7 @@ void GamePlayback::handleMenu(SDL_Event &e){
             if(playBackPointer == 0)
                 menuPointer = 6;
             else{
+                Mix_HaltMusic();
                 mode = 1;
             }
             return;

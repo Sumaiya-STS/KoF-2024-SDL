@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include <stdio.h>
 #include <string>
 #include "LTexture.h"
@@ -14,6 +15,7 @@
 using namespace std;
 queue < Event > q;
 map < pair< int , int >, int > powermap;
+
 
 class Power{
     public:
@@ -216,6 +218,8 @@ class Dot
         static const int nStates = 12;
         LTexture gDotTexture;
         LTexture gHealthTexture;
+        Mix_Chunk* gDamage = NULL;
+        Mix_Chunk* gPower = NULL;
 		int DOT_WIDTH[nStates];
 		int DOT_HEIGHT[nStates];
         int powerId = 0;
@@ -374,6 +378,8 @@ class Dot
 Dot::Dot(int _pType, int *pBack)
 {
 
+    gDamage = Mix_LoadWAV( "./Audio/damage.wav" );
+    gPower = Mix_LoadWAV("./Audio/power.wav");
     playBackPointer = pBack;
     pType = _pType;
     if(pType== 0){
@@ -776,6 +782,7 @@ void Dot::handleEvent( SDL_Event& e )
             performingState = 1;
             state = 7;
             frames = 0;
+            Mix_PlayChannel( -1, gPower, 0 );
             powerContainer.push_back(Power(pType,mPosX + 150, mPosY + 190, powerId++));
         }
 
@@ -851,6 +858,7 @@ bool Dot::handleFightingEvent(Event e){
         }
         //check collission
         if(collission(e.posX, e.posY)){
+            Mix_PlayChannel( -1, gDamage, 0 );
             cout << "Punch Collied" << endl;
             life.decreasePunch();
             if(state == 1 || state == 6){
@@ -874,6 +882,7 @@ bool Dot::handleFightingEvent(Event e){
         }
         //check collission
         if(collission(e.posX, e.posY)){
+            Mix_PlayChannel( -1, gDamage, 0 );
             cout << "Kick Collied" << endl;
             life.decreaseKick();
             if(state == 1 || state == 6){
@@ -897,6 +906,7 @@ bool Dot::handleFightingEvent(Event e){
         if(collission(e.posX, e.posY) and state!= 4){
             
             life.decreasePower();
+            Mix_PlayChannel( -1, gDamage, 0 );
             cout << " Power Collied: "<< e.getTime() << endl;
             powermap[{e.getMaster(),e.getTime()}] = 1;
             if(state == 1 || state == 6){
