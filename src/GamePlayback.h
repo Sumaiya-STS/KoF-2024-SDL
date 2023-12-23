@@ -50,7 +50,7 @@ class GamePlayback
 private:
     /* data */
     SDL_Renderer* gRenderer;
-    int mode; // mode 0 for main menu, mode 1 for play, mode 2 for leaderboard, mode 3 for instruction
+    int mode; // mode 0 for main menu, mode 1 for play
     int menuPointer;
     int playBackPointer ; // 0 for pre-game phrase, 1 for game running,2 showing video, 3 for game phrase end
     int countDown = 0;
@@ -197,7 +197,7 @@ void GamePlayback::handleMenu(SDL_Event &e){
                 if(playBackPointer == 0)
                     menuPointer = 6;
                 else{
-                    Mix_HaltMusic();
+                    // Mix_HaltMusic();
                     mode = 1;
                 }
                 return;
@@ -343,7 +343,7 @@ void GamePlayback::handleMenu(SDL_Event &e){
             if(playBackPointer == 0)
                 menuPointer = 6;
             else{
-                Mix_HaltMusic();
+                // Mix_HaltMusic();
                 mode = 1;
             }
             return;
