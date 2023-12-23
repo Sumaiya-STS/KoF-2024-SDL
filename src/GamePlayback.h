@@ -224,10 +224,14 @@ void GamePlayback::handleMenu(SDL_Event &e){
                 menuPointer = 0;
             }
             if(menuPointer == 6){
+                if(currentP1Name.empty())
+                    return;
                 menuPointer = 7;
                 return;
             }
             if(menuPointer == 7){
+                if(currentP2Name.empty())
+                    return;
                 playBackPointer = 1;
                 mode = 1;
                 matchStartTime = SDL_GetTicks();
