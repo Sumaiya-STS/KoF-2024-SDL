@@ -72,8 +72,11 @@ public:
     LTexture gTextTexture;
     LTexture gNameTexture;
     LTexture gLeaderTextTexture;
-
+    LTexture winnerImageTexture;
+    LTexture winnerTextTexture;
+    int winnerImagePosY = 0;
     Mix_Music *gMusic = NULL;
+    Mix_Chunk *clap;
     //Character
     Dot player1 = Dot(00, &playBackPointer);
     Dot player2 = Dot(01, &playBackPointer);
@@ -145,9 +148,15 @@ bool GamePlayback::loadMedia()
 		success = false;
 
 	}
+    if(!winnerImageTexture.loadFromFile(gRenderer,"./Menu/ko.png")){
+		printf( "Failed to load KO background texture!\n" );
+		success = false;
+
+	}
     gTextTexture.gFont = TTF_OpenFont("./Config/font.otf",78);
 	gNameTexture.gFont = TTF_OpenFont("./Config/font.otf",58);
     gLeaderTextTexture.gFont = TTF_OpenFont("./Config/franciosone.ttf",58);
+    winnerTextTexture.gFont = TTF_OpenFont("./Config/font.otf",100);
 
     gMusic = Mix_LoadMUS( "Audio/intro.wav" );
     if( gMusic == NULL )
@@ -155,6 +164,7 @@ bool GamePlayback::loadMedia()
         printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
         success = false;
     }
+    clap = Mix_LoadWAV("Audio/clap.wav");
 
 	return success;
 }
@@ -469,6 +479,7 @@ void GamePlayback::renderPlayback(){
         winnerName = currentP2Name;
         loserName = currentP1Name;
         player2.win();
+        Mix_PlayChannel( -1, clap, 0 );
         playBackPointer = 3;
     }
     if(!player2.isAlive() and playBackPointer != 3){
@@ -480,6 +491,7 @@ void GamePlayback::renderPlayback(){
         winnerName = currentP1Name;
         loserName = currentP2Name;
         player1.win();
+        Mix_PlayChannel( -1, clap, 0 );
         playBackPointer = 3;
     }
     if(playBackPointer != 3){
@@ -531,9 +543,20 @@ void GamePlayback::renderPlayback(){
         player1.move(player2.getPosX() - player2.Scaler*45);
         player2.move(player1.getPosX() + player1.DOT_WIDTH[player1.getState()] - 60);
 
+
     }
+    //Clear screen
+    SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+    SDL_RenderClear( gRenderer );
+    gBackground.render(gRenderer, 0,0);
     if(playBackPointer == 3){
         countDown++;
+        winnerImageTexture.render(gRenderer, 600, 100 + winnerImagePosY);
+        winnerImagePosY+=4;
+        winnerImagePosY = min(winnerImagePosY, 500);
+        SDL_Color textColor = {200 , 200 ,200};
+        winnerTextTexture.loadFromRenderedText(gRenderer,winnerName + " wins !", textColor);
+        winnerTextTexture.render(gRenderer,600, 1000-winnerImagePosY);
         if(countDown == 300){
             countDown = 0 ;
             resetGame();
@@ -546,10 +569,7 @@ void GamePlayback::renderPlayback(){
             return;
         }
     }
-    //Clear screen
-    SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
-    SDL_RenderClear( gRenderer );
-    gBackground.render(gRenderer, 0,0);
+    
     //Render objects
     player1.render(gRenderer);
     player2.render(gRenderer);
